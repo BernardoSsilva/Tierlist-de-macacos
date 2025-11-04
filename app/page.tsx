@@ -249,6 +249,12 @@ export default function Home() {
       name: "donkey kong",
       imageSrc: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRChN8t_bKjg6BhdOfi-7sMMxsU8M8GRwwmWw&s",
     },
+
+    {
+      id: 35,
+      name: "ragavan",
+      imageSrc: "https://cards.scryfall.io/large/front/a/9/a9738cda-adb1-47fb-9f4c-ecd930228c4d.jpg?1681963138",
+    }
   ])
 
   function ondragend(result: any) {
