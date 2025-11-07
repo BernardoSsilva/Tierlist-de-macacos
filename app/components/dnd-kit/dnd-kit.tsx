@@ -340,47 +340,33 @@ export function DndKit() {
         { id: "no tier", label: "", macacos: macacos }
     ]);
 
-    function handleDragEnd(event: DragEndEvent) {
+    const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
-
         if (!over) return;
 
-        const sourceTierId = active.data.current?.tierId;
-        const targetTierId = over.data.current?.tierId;
+        const fromContainer = active.data.current?.sortable?.containerId;
+        const toContainer = over.data.current?.sortable?.containerId;
 
-        if (!sourceTierId || !targetTierId) return;
+        if (fromContainer && toContainer && fromContainer !== toContainer) {
+            setTiers(prev => {
+                const fromTier = prev.find(t => t.id === fromContainer);
+                const toTier = prev.find(t => t.id === toContainer);
+                if (!fromTier || !toTier) return prev;
 
-        if (sourceTierId === targetTierId) {
-            setTiers((prev) =>
-                prev.map((tier) =>
-                    tier.id === sourceTierId
-                        ? {
-                            ...tier,
-                            macacos: arrayMove(
-                                tier.macacos,
-                                tier.macacos.findIndex((m) => m.id === active.id),
-                                tier.macacos.findIndex((m) => m.id === over.id)
-                            ),
-                        }
-                        : tier
-                )
-            );
-        } else {
-            setTiers((prev) => {
-                const sourceTier = prev.find((t) => t.id === sourceTierId)!;
-                const targetTier = prev.find((t) => t.id === targetTierId)!;
-                const moved = sourceTier.macacos.find((m) => m.id === active.id)!;
+                const movingMacaco = fromTier.macacos.find(m => m.id === active.id);
+                if (!movingMacaco) return prev;
 
-                return prev.map((tier) => {
-                    if (tier.id === sourceTierId)
-                        return { ...tier, macacos: tier.macacos.filter((m) => m.id !== active.id) };
-                    if (tier.id === targetTierId)
-                        return { ...tier, macacos: [...tier.macacos, moved] };
-                    return tier;
+                const newFromMacacos = fromTier.macacos.filter(m => m.id !== active.id);
+                const newToMacacos = [...toTier.macacos, movingMacaco];
+
+                return prev.map(t => {
+                    if (t.id === fromTier.id) return { ...t, macacos: newFromMacacos };
+                    if (t.id === toTier.id) return { ...t, macacos: newToMacacos };
+                    return t;
                 });
             });
         }
-    }
+    };
 
 
     return (
@@ -392,7 +378,7 @@ export function DndKit() {
                 <SortableContext
                     key={tier.id}
                     id={tier.id}
-                    items={tier.macacos.map((m) => m.id)}
+                    items={tier.macacos}
                     strategy={rectSortingStrategy}>
                     <TierContainer tier={{
                         id: tier.id,
@@ -415,7 +401,7 @@ function TierContainer({ tier }: { tier: Tier }) {
             {tier.label.length > 0 &&
                 <div
                     className={`w-24 text-center py-4 rounded-lg font-bold text-lg text-white
-                bg-gradient-to-b from-emerald-600 to-emerald-800
+              from-emerald-600 to-emerald-800
                 shadow-md`}
                 >
                     {tier.label}
@@ -428,17 +414,19 @@ function TierContainer({ tier }: { tier: Tier }) {
             >
                 <SortableContext
                     id={tier.id}
-                    items={tier.macacos.map((m) => m.id)}
+                    items={tier.macacos}
                     strategy={rectSortingStrategy}
                 >
-                    {tier.macacos.map((macaco, index) => (
-                        <SortableMonkey
-                            key={macaco.id}
+                    {tier.macacos.map((macaco, index) => {
+                        console.log(tier, macaco)
+                        return (<SortableMonkey
+                            key={`${macaco.name}-${index}`}
                             macaco={macaco}
                             index={index}
                             containerId={tier.id}
-                        />
-                    ))}
+                        />)
+                    }
+                    )}
                 </SortableContext>
             </div>
         </div>
