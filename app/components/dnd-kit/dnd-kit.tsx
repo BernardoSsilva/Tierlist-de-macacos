@@ -1,4 +1,4 @@
-import { DndContext, closestCenter, DragEndEvent, closestCorners } from "@dnd-kit/core";
+import { DndContext, closestCenter, DragEndEvent, closestCorners, useDroppable } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy, arrayMove, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useState } from "react";
@@ -11,7 +11,13 @@ type Macaco = {
     imageSrc: string;
 };
 
+type Tier = {
+    id: string;
+    label: string;
+    macacos: Macaco[];
+};
 export function DndKit() {
+
     const [macacos, setMacacos] = useState<Macaco[]>([
         {
             id: 1,
@@ -298,42 +304,161 @@ export function DndKit() {
             id: 42,
             name: "Macaco dev",
             imageSrc: "https://thumbs.dreamstime.com/b/desenvolvedor-de-software-macaco-sentado-atr%C3%A1s-do-computador-ilustra%C3%A7%C3%A3o-programador-275926972.jpg",
+        },
+
+        {
+            id: 43,
+            name: "Macaco do Sérgio malandro",
+            imageSrc: "https://www.humpalumpa.com.br/fotos/agenda/25agenda_02112020-145459.jpg",
+        },
+
+        {
+            id: 44,
+            name: "macaco de iphone",
+            imageSrc: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQZqDOn9efBGyWDlOuqp26muYLHGT6QmKpD1Q&s"
+        },
+
+        {
+            id: 45,
+            name: "trupe de macacos com iphone, menos um",
+            imageSrc: "https://jam.dev/cdn-cgi/image/width=1600,quality=100,dpr=1.25/https://cdn-jam-screenshots.jam.dev/9f4e35dd8d342a8ccba574203f1e0f55/screenshot/1cd4c76d-c1c5-4c96-b263-9082ab80067f.png"
+        },
+
+        {
+            id: 46,
+            name: "macaco mim de",
+            imageSrc: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRc6MSB7H1bcgq59Nd08ndoP-7z4uimElky6Q&s"
         }
     ])
 
+    const [tiers, setTiers] = useState<Tier[]>([
+        { id: "S", label: "Tier S", macacos: [] },
+        { id: "A", label: "Tier A", macacos: [] },
+        { id: "B", label: "Tier B", macacos: [] },
+        { id: "C", label: "Tier C", macacos: [] },
+        { id: "D", label: "Tier D", macacos: [] },
+        { id: "no tier", label: "", macacos: macacos }
+    ]);
+
     function handleDragEnd(event: DragEndEvent) {
         const { active, over } = event;
-        if (!over || active.id === over.id) return;
 
-        setMacacos((macacosAtuais) => {
-            const oldIndex = macacosAtuais.findIndex((macaco) => macaco.id === Number(active.id));
-            const newIndex = macacosAtuais.findIndex((macaco) => macaco.id === Number(over.id));
-            return arrayMove(macacosAtuais, oldIndex, newIndex);
-        });
+        if (!over) return;
+
+        const sourceTierId = active.data.current?.tierId;
+        const targetTierId = over.data.current?.tierId;
+
+        if (!sourceTierId || !targetTierId) return;
+
+        if (sourceTierId === targetTierId) {
+            setTiers((prev) =>
+                prev.map((tier) =>
+                    tier.id === sourceTierId
+                        ? {
+                            ...tier,
+                            macacos: arrayMove(
+                                tier.macacos,
+                                tier.macacos.findIndex((m) => m.id === active.id),
+                                tier.macacos.findIndex((m) => m.id === over.id)
+                            ),
+                        }
+                        : tier
+                )
+            );
+        } else {
+            setTiers((prev) => {
+                const sourceTier = prev.find((t) => t.id === sourceTierId)!;
+                const targetTier = prev.find((t) => t.id === targetTierId)!;
+                const moved = sourceTier.macacos.find((m) => m.id === active.id)!;
+
+                return prev.map((tier) => {
+                    if (tier.id === sourceTierId)
+                        return { ...tier, macacos: tier.macacos.filter((m) => m.id !== active.id) };
+                    if (tier.id === targetTierId)
+                        return { ...tier, macacos: [...tier.macacos, moved] };
+                    return tier;
+                });
+            });
+        }
     }
 
+
     return (
-        <DndContext collisionDetection={closestCorners} onDragEnd={handleDragEnd} >
-            <SortableContext items={macacos.map((m) => m.id)} strategy={rectSortingStrategy}>
-                <div className={`
-                flex flex-wrap items-center justify-start gap-3
-                w-full h-[(85%)] p-4 rounded-xl
-                border-2 border-dashed transition-colors duration-300
-    bg-gray-800/40 border-gray-600
-              `}>
-                    {macacos.map((macaco, index) => (
-                        <SortableMonkey key={macaco.id} macaco={macaco} index={index} />
-                    ))}
-                </div>
-            </SortableContext>
-        </DndContext >
+        <DndContext
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+        >
+            {tiers.map((tier) => (
+                <SortableContext
+                    key={tier.id}
+                    id={tier.id}
+                    items={tier.macacos.map((m) => m.id)}
+                    strategy={rectSortingStrategy}>
+                    <TierContainer tier={{
+                        id: tier.id,
+                        label: tier.label,
+                        macacos: tier.macacos
+                    }} />
+                </SortableContext>
+            ))}
+        </DndContext>
     );
 }
 
-function SortableMonkey({ macaco, index }: { macaco: Macaco; index: number }) {
-    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
-        id: macaco.id.toString(),
+function TierContainer({ tier }: { tier: Tier }) {
+    const { setNodeRef } = useDroppable({
+        id: tier.id,
     });
+
+    return (
+        <div className="flex items-start gap-3 w-full m-2">
+            {tier.label.length > 0 &&
+                <div
+                    className={`w-24 text-center py-4 rounded-lg font-bold text-lg text-white
+                bg-gradient-to-b from-emerald-600 to-emerald-800
+                shadow-md`}
+                >
+                    {tier.label}
+                </div>
+            }
+
+            <div
+                ref={setNodeRef}
+                className="flex-1 min-h-[140px] bg-gray-800/40 border-2 border-dashed border-gray-600 rounded-xl p-4 flex flex-wrap gap-3"
+            >
+                <SortableContext
+                    id={tier.id}
+                    items={tier.macacos.map((m) => m.id)}
+                    strategy={rectSortingStrategy}
+                >
+                    {tier.macacos.map((macaco, index) => (
+                        <SortableMonkey
+                            key={macaco.id}
+                            macaco={macaco}
+                            index={index}
+                            containerId={tier.id}
+                        />
+                    ))}
+                </SortableContext>
+            </div>
+        </div>
+    );
+}
+
+function SortableMonkey({
+    macaco,
+    index,
+    containerId,
+}: {
+    macaco: Macaco;
+    index: number;
+    containerId: string;
+}) {
+    const { attributes, listeners, setNodeRef, transform, transition } =
+        useSortable({
+            id: macaco.id.toString(),
+            data: { containerId },
+        });
 
     const style = {
         transform: CSS.Transform.toString(transform),

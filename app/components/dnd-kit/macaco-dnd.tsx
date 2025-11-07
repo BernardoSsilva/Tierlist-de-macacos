@@ -27,7 +27,7 @@ export function DndKitMonkey({ imageSrc, name, id, index }: MacacoProps) {
             ref={setNodeRef}
             style={style}
             className="flex flex-col items-center justify-center 
-        w-50 h-70 bg-white rounded-lg p-1 
+        w-60 h-70 bg-white rounded-lg p-1 
         border border-gray-300 shadow-sm 
         hover:shadow-md transition-all duration-200"
         >

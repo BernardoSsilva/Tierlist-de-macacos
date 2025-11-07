@@ -14,7 +14,6 @@ export default function Home() {
       <h1 className="font-bold text-white text-[5rem]">
         Tierlist muito barba de macacos maneiros
       </h1>
-      <PangeaDragAndDrop />
       <DndKit />
     </div>
   );
